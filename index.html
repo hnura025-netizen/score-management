@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GGSS Daura - Professional Portal v21</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e3c72">
+    <link rel="apple-touch-icon" href="icon.png">
+
+    <style>
+        :root {
+            --primary: #1e3c72;
+            --secondary: #2a5298;
+            --accent: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg-body: #f0f2f5;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 25px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: white;
+            padding: 8px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 700;
+            color: var(--primary);
+            transition: 0.3s;
+        }
+
+        .tab-btn.active { background: var(--primary); color: white; }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #444; font-size: 14px; }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th { background: var(--primary); color: white; padding: 12px; font-size: 13px; }
+        td { padding: 12px 8px; border-bottom: 1px solid #edf2f7; text-align: center; }
+
+        .student-link { color: var(--secondary); cursor: pointer; text-decoration: underline; font-weight: 600; }
+        .score-input { width: 60px; text-align: center; font-weight: bold; border: 1px solid #ccc; border-radius: 4px; }
+
+        .badge { padding: 4px 8px; border-radius: 4px; font-weight: 800; color: white; font-size: 12px; display: inline-block; }
+        .bg-a { background: #059669; }
+        .bg-b { background: #2563eb; }
+        .bg-c { background: #d97706; }
+        .bg-def { background: #dc2626; }
+
+        .btn { padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+
+        #reportCardView { display: none; background: white; padding: 40px; border-radius: 15px; }
+
+        .single-report {
+            padding: 30px;
+            border: 2px solid #333;
+            margin-bottom: 50px;
+            background: white;
+            page-break-after: always;
+        }
+
+        /* Search Input Styling */
+        .search-box {
+            margin-bottom: 10px;
+            border: 2px solid var(--primary);
+            background: #f9f9f9;
+        }
+
+        @media print {
+            .tabs, .btn, .no-print, .header, #broadSheetView { display: none !important; }
+            #reportCardView { display: block !important; border: none; padding: 0; width: 100%; }
+            body { background: white; padding: 0; }
+            .single-report { border: 2px solid #000; margin-bottom: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>🏫 GGSS DAURA</h1>
+        <p>Official School Records & Result Management System</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" id="btn-teacher" onclick="window.showTab('teacher')">📝 SCORE ENTRY</button>
+        <button class="tab-btn" id="btn-master" onclick="window.showTab('master')">📊 BROAD SHEET</button>
+        <button class="tab-btn" id="btn-settings" onclick="window.showTab('settings')">⚙️ REGISTRY</button>
+    </div>
+
+    <div id="teacherTab" class="tab-pane">
+        <div class="card">
+            <h2>Enter Subject Scores</h2>
+            <div class="form-row">
+                <div>
+                    <label>Session Term</label>
+                    <select id="tTerm">
+                        <option>1st Term</option>
+                        <option>2nd Term</option>
+                        <option>3rd Term</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Class</label>
+                    <select id="tClass" onchange="window.loadStudentList()">
+                        <option value="">-- Select Class --</option>
+                        <option>SSS 1A</option><option>SSS 1B</option>
+                        <option>SSS 2A</option><option>SSS 2B</option>
+                        <option>SSS 3A</option><option>SSS 3B</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Subject</label>
+                    <select id="tSubject">
+                        <option value="">-- Select Subject --</option>
+                        <option>Mathematics</option><option>English Language</option>
+                        <option>Biology</option><option>Chemistry</option>
+                        <option>Physics</option><option>Economics</option>
+                        <option>Civic Education</option>
+                    </select>
+                </div>
+            </div>
+            <div style="overflow-x:auto">
+                <table>
+                    <thead>
+                        <tr><th>S/N</th><th style="text-align:left">Name</th><th>1st CA (20)</th><th>2nd CA (20)</th><th>Exam (60)</th><th>Total</th><th>Grade</th></tr>
+                    </thead>
+                    <tbody id="studentRows"></tbody>
+                </table>
+            </div>
+            <div style="text-align:right; margin-top:20px;"><button class="btn btn-primary" onclick="window.saveScores()">💾 Sync to Cloud</button></div>
+        </div>
+    </div>
+
+    <div id="masterTab" class="tab-pane" style="display:none">
+        <div class="card" id="broadSheetView">
+            <h2>Class Results</h2>
+            <div class="form-row">
+                <div>
+                    <label>Term</label>
+                    <select id="rTerm">
+                        <option>1st Term</option>
+                        <option>2nd Term</option>
+                        <option>3rd Term</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Class</label>
+                    <select id="rClass">
+                        <option value="">Select Class</option>
+                        <option>SSS 1A</option><option>SSS 1B</option>
+                        <option>SSS 2A</option><option>SSS 2B</option>
+                        <option>SSS 3A</option><option>SSS 3B</option>
+                    </select>
+                </div>
+                <div style="display:flex; align-items:flex-end; gap:10px">
+                    <button class="btn btn-success" onclick="window.generateReport()">Generate</button>
+                    <button class="btn btn-primary" onclick="window.bulkPrint()">🖨️ Print All</button>
+                </div>
+            </div>
+            <div id="reportDisplay" style="overflow-x:auto"></div>
+        </div>
+
+        <div id="reportCardView" class="card">
+            <button class="btn btn-primary no-print" onclick="window.closeReportCard()">← Back to List</button>
+            <button class="btn btn-success no-print" onclick="window.print()" style="float:right">🖨️ Print View</button>
+            <div id="cardContent" style="margin-top:20px"></div>
+        </div>
+    </div>
+
+    <div id="settingsTab" class="tab-pane" style="display:none">
+        <div id="adminLogin" class="card" style="max-width: 400px; margin: 40px auto;">
+            <h2 style="text-align:center; margin-bottom:20px">🔐 Admin Login</h2>
+            <div style="margin-bottom:15px">
+                <label>Admin Email</label>
+                <input type="email" id="adminEmail" placeholder="admin@school.com">
+            </div>
+            <div style="margin-bottom:15px">
+                <label>Password</label>
+                <input type="password" id="adminPass" placeholder="••••••••">
+            </div>
+            <button class="btn btn-primary" style="width:100%" onclick="window.handleAuth()">Login to Manage</button>
+            <p style="text-align:center; margin-top:15px">
+                <a href="#" onclick="window.handleReset()" style="color:var(--secondary); font-size:13px; text-decoration:none">Forgot Password?</a>
+            </p>
+        </div>
+
+        <div id="adminContent" style="display: none;">
+            <div class="form-row">
+                <div class="card">
+                    <h2>Register Student</h2>
+                    <input type="text" id="newSName" placeholder="Full Name" style="margin-bottom:10px">
+                    <select id="newSClass">
+                        <option>SSS 1A</option><option>SSS 1B</option>
+                        <option>SSS 2A</option><option>SSS 2B</option>
+                        <option>SSS 3A</option><option>SSS 3B</option>
+                    </select>
+                    <button class="btn btn-success" style="width:100%; margin-top:10px" onclick="window.addStudent()">Add Student</button>
+                </div>
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+                        <h2>Registry List</h2>
+                        <button class="btn btn-danger" style="padding:5px 15px; font-size:12px" onclick="window.logoutAdmin()">Logout Admin</button>
+                    </div>
+                    <input type="text" id="registrySearch" class="search-box" placeholder="🔍 Search student by name..." oninput="window.renderRegistry()">
+                    
+                    <div id="registryBodyContainer" style="max-height:400px; overflow-y:auto">
+                        <table>
+                            <thead><tr><th>Name</th><th>Class</th><th>Del</th></tr></thead>
+                            <tbody id="registryBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDywza4t-iv5l-c5X5vl8COHBHfcQDZRms",
+        authDomain: "score-management-d9118.firebaseapp.com",
+        projectId: "score-management-d9118",
+        storageBucket: "score-management-d9118.firebasestorage.app",
+        messagingSenderId: "137762351704",
+        appId: "1:137762351704:web:557e50a00693c73dd6b82d"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    let students = [];
+    let records = [];
+    let currentUser = null;
+
+    // --- PWA SERVICE WORKER REGISTRATION ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('Service Worker Registered'))
+                .catch(err => console.log('Service Worker Failed', err));
+        });
+    }
+
+    // --- TAB SYSTEM ---
+    window.showTab = (tabId) => {
+        document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        const targetTab = document.getElementById(tabId + 'Tab');
+        const targetBtn = document.getElementById('btn-' + tabId);
+        if(targetTab) targetTab.style.display = 'block';
+        if(targetBtn) targetBtn.classList.add('active');
+        if(tabId === 'settings') handleAuthDisplay();
+    };
+
+    // --- AUTHENTICATION ---
+    onAuthStateChanged(auth, (user) => {
+        currentUser = user;
+        handleAuthDisplay();
+    });
+
+    function handleAuthDisplay() {
+        const loginDiv = document.getElementById('adminLogin');
+        const contentDiv = document.getElementById('adminContent');
+        if(currentUser) {
+            if(loginDiv) loginDiv.style.display = 'none';
+            if(contentDiv) contentDiv.style.display = 'block';
+        } else {
+            if(loginDiv) loginDiv.style.display = 'block';
+            if(contentDiv) contentDiv.style.display = 'none';
+        }
+    }
+
+    window.handleAuth = async () => {
+        const email = document.getElementById('adminEmail').value;
+        const pass = document.getElementById('adminPass').value;
+        try {
+            await signInWithEmailAndPassword(auth, email, pass);
+        } catch (e) { alert("Login Error: " + e.message); }
+    };
+
+    window.handleReset = async () => {
+        const email = document.getElementById('adminEmail').value;
+        if(!email) return alert("Enter email first.");
+        try {
+            await sendPasswordResetEmail(auth, email);
+            alert("Reset link sent to your email!");
+        } catch (e) { alert("Error: " + e.message); }
+    };
+
+    window.logoutAdmin = () => signOut(auth);
+
+    // --- REGISTRY ---
+    onSnapshot(collection(db, "students"), (snapshot) => {
+        students = snapshot.docs.map(doc => doc.data());
+        window.renderRegistry();
+    });
+
+    window.renderRegistry = () => {
+        const body = document.getElementById('registryBody');
+        const searchTerm = document.getElementById('registrySearch')?.value.toLowerCase() || "";
+        if(!body) return;
+
+        // Filter and sort students
+        const filtered = students
+            .filter(s => s.name.toLowerCase().includes(searchTerm))
+            .sort((a,b)=>a.name.localeCompare(b.name));
+
+        body.innerHTML = filtered.map(s => `
+            <tr><td style="text-align:left">${s.name}</td><td>${s.class}</td>
+            <td><button onclick="window.deleteStudent('${s.id}')" class="btn-danger" style="padding:2px 8px">✖</button></td></tr>
+        `).join('');
+    };
+
+    window.addStudent = async () => {
+        if(!currentUser) return alert("Log in first");
+        const nameInput = document.getElementById('newSName');
+        const name = nameInput.value.trim();
+        const cls = document.getElementById('newSClass').value;
+        if(!name) return alert("Enter name");
+        const id = "SID" + Date.now();
+        await setDoc(doc(db, "students", id), { id, name, class: cls });
+        nameInput.value = "";
+    };
+
+    window.deleteStudent = async (id) => {
+        if(!currentUser) return alert("Log in first");
+        if(confirm("Delete student?")) await deleteDoc(doc(db, "students", id));
+    };
+
+    // --- SCORES ---
+    onSnapshot(collection(db, "records"), (snapshot) => {
+        records = snapshot.docs.map(doc => doc.data());
+    });
+
+    window.loadStudentList = () => {
+        const cls = document.getElementById('tClass').value;
+        const filtered = students.filter(s => s.class === cls).sort((a,b)=>a.name.localeCompare(b.name));
+        const container = document.getElementById('studentRows');
+        container.innerHTML = filtered.map((s, i) => `
+            <tr>
+                <td>${i+1}</td><td style="text-align:left">${s.name}</td>
+                <td><input type="number" class="score-input ca1" data-id="${s.id}" oninput="window.calc(this)"></td>
+                <td><input type="number" class="score-input ca2" oninput="window.calc(this)"></td>
+                <td><input type="number" class="score-input exam" oninput="window.calc(this)"></td>
+                <td><strong class="total-display">0</strong></td>
+                <td><span class="badge">-</span></td>
+            </tr>
+        `).join('');
+    };
+
+    window.calc = (el) => {
+        const row = el.closest('tr');
+        const c1 = parseFloat(row.querySelector('.ca1').value) || 0;
+        const c2 = parseFloat(row.querySelector('.ca2').value) || 0;
+        const ex = parseFloat(row.querySelector('.exam').value) || 0;
+        const total = c1 + c2 + ex;
+        row.querySelector('.total-display').innerText = total;
+        let g = total >= 70 ? {l:'A',c:'bg-a'} : total >= 60 ? {l:'B',c:'bg-b'} : total >= 50 ? {l:'C',c:'bg-b'} : total >= 45 ? {l:'D',c:'bg-c'} : total >= 40 ? {l:'E',c:'bg-c'} : {l:'F',c:'bg-def'};
+        const b = row.querySelector('.badge'); b.innerText = g.l; b.className = 'badge ' + g.c;
+    };
+
+    window.saveScores = async () => {
+        const sub = document.getElementById('tSubject').value;
+        const cls = document.getElementById('tClass').value;
+        const term = document.getElementById('tTerm').value;
+        if(!sub || !cls) return alert("Select Term, Class, and Subject");
+
+        const rows = document.querySelectorAll('#studentRows tr');
+        const promises = [];
+        rows.forEach(row => {
+            const sid = row.querySelector('.ca1').dataset.id;
+            const ca1 = parseFloat(row.querySelector('.ca1').value) || 0;
+            const ca2 = parseFloat(row.querySelector('.ca2').value) || 0;
+            const exam = parseFloat(row.querySelector('.exam').value) || 0;
+            const total = ca1 + ca2 + exam;
+            const grade = row.querySelector('.badge').innerText;
+            const rId = `${term.replace(/\s/g,'')}_${sid}_${sub.replace(/\s/g,'')}`;
+            promises.push(setDoc(doc(db, "records", rId), {
+                id: rId, studentId: sid, term, class: cls, subject: sub, ca1, ca2, exam, total, grade
+            }));
+        });
+        try {
+            await Promise.all(promises);
+            alert("Scores Uploaded Successfully!");
+            document.getElementById('studentRows').innerHTML = "";
+        } catch(e) { alert("Error: " + e.message); }
+    };
+
+    // --- REPORTING ---
+    window.generateReport = () => {
+        const cls = document.getElementById('rClass').value;
+        const term = document.getElementById('rTerm').value;
+        if(!cls) return alert("Select class");
+        const filtered = records.filter(r => r.class === cls && r.term === term);
+        const subjects = [...new Set(filtered.map(r => r.subject))];
+        const classStudents = students.filter(s => s.class === cls).sort((a,b)=>a.name.localeCompare(b.name));
+
+        let h = `<table><thead><tr><th>Name</th>${subjects.map(s => `<th>${s}</th>`).join('')}</tr></thead><tbody>`;
+        classStudents.forEach(s => {
+            h += `<tr><td class="student-link" onclick="window.viewReportCard('${s.id}', '${term}')">${s.name}</td>`;
+            subjects.forEach(sub => {
+                const r = filtered.find(rec => rec.studentId === s.id && rec.subject === sub);
+                h += `<td>${r ? r.total : '-'}</td>`;
+            });
+            h += `</tr>`;
+        });
+        document.getElementById('reportDisplay').innerHTML = h + `</tbody></table>`;
+    };
+
+    window.viewReportCard = (id, term) => {
+        document.getElementById('cardContent').innerHTML = window.getSingleReportHTML(id, term);
+        document.getElementById('broadSheetView').style.display = 'none';
+        document.getElementById('reportCardView').style.display = 'block';
+    };
+
+    window.getSingleReportHTML = (id, term) => {
+        const s = students.find(st => st.id === id);
+        const rcs = records.filter(r => r.studentId === id && r.term === term);
+        const clsM = students.filter(st => st.class === s.class);
+        
+        const ranks = clsM.map(m => {
+            const mRcs = records.filter(r => r.studentId === m.id && r.term === term);
+            return {id: m.id, sum: mRcs.reduce((a,b)=>a+b.total, 0)};
+        }).sort((a,b) => b.sum - a.sum);
+        
+        const pos = ranks.findIndex(r => r.id === id) + 1;
+        const totalSum = rcs.reduce((a,b) => a + b.total, 0);
+        const average = rcs.length > 0 ? (totalSum / rcs.length).toFixed(1) : 0;
+
+        const remarkMap = { 'A': 'Excellent', 'B': 'V.Good', 'C': 'Good', 'D': 'Pass', 'E': 'Fair', 'F': 'Poor' };
+
+        return `
+            <div class="single-report">
+                <div style="text-align:center; border-bottom: 2px solid #333; padding-bottom:10px; margin-bottom:20px">
+                    <h2 style="font-size: 22px;">GOVERNMENT GIRLS SECONDARY SCHOOL, DAURA</h2>
+                    <h3 style="color: #444;">${term.toUpperCase()} STUDENT PROGRESS REPORT</h3>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-weight: bold; font-size: 14px;">
+                    <div>
+                        <p>NAME: ${s.name.toUpperCase()}</p>
+                        <p>CLASS: ${s.class}</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p>POSITION: ${pos} OF ${clsM.length}</p>
+                        <p>AVERAGE: ${average}%</p>
+                    </div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="text-align:left">SUBJECT</th>
+                            <th>CA1</th>
+                            <th>CA2</th>
+                            <th>EXAM</th>
+                            <th>TOTAL</th>
+                            <th>GRADE</th>
+                            <th style="text-align:left">REMARK</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rcs.map(r => `
+                            <tr>
+                                <td style="text-align:left; font-weight: bold;">${r.subject}</td>
+                                <td>${r.ca1}</td>
+                                <td>${r.ca2}</td>
+                                <td>${r.exam}</td>
+                                <td><b>${r.total}</b></td>
+                                <td><span class="badge ${r.grade === 'A' ? 'bg-a' : (r.grade === 'B' || r.grade === 'C' ? 'bg-b' : (r.grade === 'F' ? 'bg-def' : 'bg-c'))}">${r.grade}</span></td>
+                                <td style="text-align:left; font-size: 13px; font-weight: 600;">${remarkMap[r.grade] || '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <div style="margin-top: 30px; display: flex; justify-content: space-between; border-top: 1px solid #ddd; padding-top: 15px;">
+                    <p><b>Total Score:</b> ${totalSum}</p>
+                    <p><b>Principal's Signature:</b> _________________________</p>
+                </div>
+            </div>`;
+    };
+
+    window.bulkPrint = () => {
+        const cls = document.getElementById('rClass').value;
+        const term = document.getElementById('rTerm').value;
+        const clsS = students.filter(s => s.class === cls);
+        if(!clsS.length) return alert("No students found in this class.");
+        let fh = "";
+        clsS.forEach(s => fh += window.getSingleReportHTML(s.id, term));
+        document.getElementById('cardContent').innerHTML = fh;
+        document.getElementById('broadSheetView').style.display = 'none';
+        document.getElementById('reportCardView').style.display = 'block';
+        setTimeout(() => window.print(), 1000);
+    };
+
+    window.closeReportCard = () => {
+        document.getElementById('reportCardView').style.display = 'none';
+        document.getElementById('broadSheetView').style.display = 'block';
+    };
+</script>
+</body>
+</html>
