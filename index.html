@@ -173,6 +173,12 @@
                 </div>
                 <label>Full Name</label><input type="text" id="regName" style="margin-bottom:10px;">
                 <label>Class</label><select id="regClass" style="margin-bottom:15px;"><option>Primary 1</option><option>Primary 2</option><option>Primary 3</option><option>Primary 4</option><option>Primary 5</option><option>Primary 6</option></select>
+                <label>Academic Session</label>
+                <select id="regSession" style="margin-bottom:15px;">
+                    <option>2024/2025</option>
+                    <option selected>2025/2026</option>
+                    <option>2026/2027</option>
+                </select>
                 <button class="btn btn-success" style="width:100%; margin-bottom:20px;" onclick="window.registerStudent()">➕ Add Student</button>
                 
                 <hr style="margin-bottom:20px;">
@@ -239,10 +245,12 @@
 
     // STUDENT LOGIC
     window.registerStudent = async () => {
-        const name = document.getElementById('regName').value.trim(), cls = document.getElementById('regClass').value;
+        const name = document.getElementById('regName').value.trim(), 
+              cls = document.getElementById('regClass').value,
+              session = document.getElementById('regSession').value; // Added session
         if(!name) return;
         const id = "STU" + Date.now();
-        await setDoc(doc(db, "students", id), { id, name, class: cls });
+        await setDoc(doc(db, "students", id), { id, name, class: cls, session: session }); // Added session to firestore
         document.getElementById('regName').value = "";
     };
 
@@ -330,10 +338,16 @@
     };
 
     window.getSingleReportHTML = (id, term) => {
-        const s = students.find(st => st.id === id), rcs = records.filter(r => r.studentId === id && r.term === term), pos = window.getClassPositions(s.class, term);
+        const s = students.find(st => st.id === id), 
+              rcs = records.filter(r => r.studentId === id && r.term === term), 
+              pos = window.getClassPositions(s.class, term);
+        const sessionDisplay = s.session || "2025/2026"; // Fallback if old record
+        
         return `<div class="single-report">
             <div style="text-align:center;border-bottom:3px solid #1e3c72;padding-bottom:15px;margin-bottom:20px">
-                <h2>MAGAJI SA'IDU PRIMARY SCHOOL DAURA</h2><p>OFFICIAL STUDENT REPORT - ${term.toUpperCase()}</p>
+                <h2>MAGAJI SA'IDU PRIMARY SCHOOL DAURA</h2>
+                <p>OFFICIAL STUDENT REPORT - ${term.toUpperCase()}</p>
+                <p><b>SESSION:</b> ${sessionDisplay}</p>
             </div>
             <div style="display:flex;justify-content:space-between;margin-bottom:20px">
                 <div><b>NAME:</b> ${s.name}<br><b>CLASS:</b> ${s.class}</div>
