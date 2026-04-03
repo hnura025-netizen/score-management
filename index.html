@@ -56,12 +56,12 @@
         .tab-btn.active { background: var(--primary); color: white; }
 
         .card { background: white; border-radius: 15px; padding: 25px; margin-bottom: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
-        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
         label { display: block; margin-bottom: 5px; font-weight: 600; color: #444; }
         input, select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 15px; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { background: var(--primary); color: white; padding: 12px; font-size: 13px; text-transform: uppercase; }
+        th { background: var(--primary); color: white; padding: 12px; font-size: 12px; text-transform: uppercase; }
         td { padding: 12px 8px; border-bottom: 1px solid #edf2f7; text-align: center; }
 
         .btn { padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.2s; }
@@ -69,22 +69,41 @@
         .btn-success { background: var(--success); color: white; }
         .btn-warning { background: var(--accent); color: white; }
         .btn-danger { background: var(--danger); color: white; }
+        .btn-link { background: none; color: var(--primary); text-decoration: underline; font-size: 13px; margin-top: 10px; cursor: pointer; border:none; }
 
         .badge { padding: 4px 8px; border-radius: 4px; font-weight: 800; color: white; font-size: 12px; display: inline-block; }
         .bg-mid { background: #2563eb; } .bg-f { background: #dc2626; }
+
+        .score-input { width: 70px; text-align: center; padding: 8px; }
+
+        #authOverlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center;
+        }
 
         #reportCardView { display: none; background: white; border-radius: 15px; }
         .single-report { padding: 40px; border: 3px solid #1e3c72; margin-bottom: 30px; background: white; min-height: 1000px; }
 
         @media print {
             body { background: white; padding: 0; margin: 0; }
-            .no-print, .header, .tabs, .btn, #broadSheetView { display: none !important; }
+            .no-print, .header, .tabs, .btn, #broadSheetView, #authOverlay { display: none !important; }
             #reportCardView { display: block !important; padding: 0; margin: 0; width: 100%; }
             .single-report { margin: 0; border: 2px solid #000; page-break-after: always; width: 100%; height: 100vh; }
         }
     </style>
 </head>
 <body>
+
+<div id="authOverlay">
+    <div class="card" style="width: 100%; max-width: 350px; text-align: center;">
+        <h2 style="margin-bottom: 20px;">Admin Login</h2>
+        <input type="email" id="adminEmail" placeholder="Admin Email" style="margin-bottom: 10px;">
+        <input type="password" id="adminPass" placeholder="Password" style="margin-bottom: 15px;">
+        <button class="btn btn-primary" style="width: 100%;" onclick="window.handleLogin()">Access Registry</button>
+        <button class="btn btn-link" onclick="window.handleReset()">Forgot Password?</button>
+        <button class="btn btn-link" style="color: #ef4444;" onclick="document.getElementById('authOverlay').style.display='none'">Close</button>
+    </div>
+</div>
 
 <div class="container">
     <div class="header">
@@ -96,7 +115,7 @@
     <div class="tabs no-print">
         <button class="tab-btn active" id="btn-teacher" onclick="window.showTab('teacher')">📝 SCORE ENTRY</button>
         <button class="tab-btn" id="btn-master" onclick="window.showTab('master')">📊 BROAD SHEET</button>
-        <button class="tab-btn" id="btn-settings" onclick="window.showTab('settings')">⚙️ REGISTRY</button>
+        <button class="tab-btn" id="btn-settings" onclick="window.openRegistry()">⚙️ REGISTRY</button>
     </div>
 
     <div id="teacherTab" class="tab-pane">
@@ -106,7 +125,22 @@
                 <div><label>Class</label><select id="tClass" onchange="window.loadStudentList()"><option value="">-- Select --</option><option>Primary 1</option><option>Primary 2</option><option>Primary 3</option><option>Primary 4</option><option>Primary 5</option><option>Primary 6</option></select></div>
                 <div><label>Subject</label><select id="tSubject"><option>Mathematics</option><option>English Language</option><option>Basic Science</option><option>Social Studies</option><option>Hausa Language</option><option>Islamic Studies</option></select></div>
             </div>
-            <div style="overflow-x:auto"><table><thead><tr><th>S/N</th><th style="text-align:left">Name</th><th>CA (40)</th><th>Exam (60)</th><th>Total</th><th>Grade</th></tr></thead><tbody id="studentRows"></tbody></table></div>
+            <div style="overflow-x:auto">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>S/N</th>
+                            <th style="text-align:left">Name</th>
+                            <th>1st CA (20)</th>
+                            <th>2nd CA (20)</th>
+                            <th>Exam (60)</th>
+                            <th>Total</th>
+                            <th>Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentRows"></tbody>
+                </table>
+            </div>
             <div style="text-align:right; margin-top:20px;"><button class="btn btn-primary" onclick="window.saveScores()">💾 Sync to Cloud</button></div>
         </div>
     </div>
@@ -133,7 +167,10 @@
     <div id="settingsTab" class="tab-pane" style="display:none">
         <div class="form-row">
             <div class="card">
-                <h2>Registration & Promotion</h2>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h2>Registration</h2>
+                    <button class="btn btn-danger" onclick="window.logoutAdmin()" style="padding: 5px 10px; font-size:12px;">Logout</button>
+                </div>
                 <label>Full Name</label><input type="text" id="regName" style="margin-bottom:10px;">
                 <label>Class</label><select id="regClass" style="margin-bottom:15px;"><option>Primary 1</option><option>Primary 2</option><option>Primary 3</option><option>Primary 4</option><option>Primary 5</option><option>Primary 6</option></select>
                 <button class="btn btn-success" style="width:100%; margin-bottom:20px;" onclick="window.registerStudent()">➕ Add Student</button>
@@ -156,6 +193,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDywza4t-iv5l-c5X5vl8COHBHfcQDZRms",
@@ -168,11 +206,30 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    let students = [], records = [];
+    const auth = getAuth(app);
 
+    let students = [], records = [], currentUser = null;
+
+    onAuthStateChanged(auth, user => { currentUser = user; if(!user && document.getElementById('settingsTab').style.display === 'block') window.showTab('teacher'); });
     onSnapshot(collection(db, "students"), snap => { students = snap.docs.map(d => d.data()); window.renderRegistry(); });
     onSnapshot(collection(db, "records"), snap => records = snap.docs.map(d => d.data()));
 
+    // AUTH LOGIC
+    window.openRegistry = () => { if(currentUser) window.showTab('settings'); else document.getElementById('authOverlay').style.display = 'flex'; };
+    window.handleLogin = async () => {
+        const e = document.getElementById('adminEmail').value, p = document.getElementById('adminPass').value;
+        try { await signInWithEmailAndPassword(auth, e, p); document.getElementById('authOverlay').style.display = 'none'; window.showTab('settings'); }
+        catch (err) { alert("Error: " + err.message); }
+    };
+    window.handleReset = async () => {
+        const e = document.getElementById('adminEmail').value;
+        if(!e) return alert("Enter email first");
+        try { await sendPasswordResetEmail(auth, e); alert("Reset link sent!"); }
+        catch (err) { alert(err.message); }
+    };
+    window.logoutAdmin = () => signOut(auth).then(() => window.showTab('teacher'));
+
+    // TAB LOGIC
     window.showTab = (id) => {
         document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -180,9 +237,9 @@
         document.getElementById('btn-' + id).classList.add('active');
     };
 
+    // STUDENT LOGIC
     window.registerStudent = async () => {
-        const name = document.getElementById('regName').value.trim();
-        const cls = document.getElementById('regClass').value;
+        const name = document.getElementById('regName').value.trim(), cls = document.getElementById('regClass').value;
         if(!name) return;
         const id = "STU" + Date.now();
         await setDoc(doc(db, "students", id), { id, name, class: cls });
@@ -191,12 +248,14 @@
 
     window.renderRegistry = () => {
         const q = document.getElementById('regSearch').value.toLowerCase();
-        document.getElementById('registryList').innerHTML = students.filter(s => s.name.toLowerCase().includes(q))
+        const list = document.getElementById('registryList');
+        if(!list) return;
+        list.innerHTML = students.filter(s => s.name.toLowerCase().includes(q))
             .sort((a,b)=>a.name.localeCompare(b.name))
             .map(s => `<tr><td style="text-align:left">${s.name}</td><td>${s.class}</td><td><button onclick="window.deleteStudent('${s.id}')" style="background:none;border:none;cursor:pointer">🗑️</button></td></tr>`).join('');
     };
 
-    window.deleteStudent = async id => { if(confirm("Delete?")) await deleteDoc(doc(db, "students", id)); };
+    window.deleteStudent = async id => { if(confirm("Delete student?")) await deleteDoc(doc(db, "students", id)); };
 
     window.promoteClass = async () => {
         const from = document.getElementById('promFrom').value, to = document.getElementById('promTo').value;
@@ -207,34 +266,47 @@
         await batch.commit(); alert("Promoted!");
     };
 
+    // SCORE LOGIC
     window.loadStudentList = () => {
         const cls = document.getElementById('tClass').value;
         document.getElementById('studentRows').innerHTML = students.filter(s => s.class === cls).sort((a,b)=>a.name.localeCompare(b.name))
             .map((s, i) => `<tr><td>${i+1}</td><td style="text-align:left">${s.name}</td>
-                <td><input type="number" class="score-input ca" data-id="${s.id}" oninput="window.calc(this)"></td>
-                <td><input type="number" class="score-input exam" oninput="window.calc(this)"></td>
-                <td><strong class="total-display">0</strong></td><td><span class="badge">-</span></td></tr>`).join('');
+                <td><input type="number" class="score-input ca1" data-id="${s.id}" oninput="window.calc(this)" max="20"></td>
+                <td><input type="number" class="score-input ca2" oninput="window.calc(this)" max="20"></td>
+                <td><input type="number" class="score-input exam" oninput="window.calc(this)" max="60"></td>
+                <td><strong class="total-display">0</strong></td><td><span class="badge bg-f">F</span></td></tr>`).join('');
     };
 
     window.calc = (el) => {
         const row = el.closest('tr');
-        const tot = (parseFloat(row.querySelector('.ca').value)||0) + (parseFloat(row.querySelector('.exam').value)||0);
+        const c1 = parseFloat(row.querySelector('.ca1').value)||0, c2 = parseFloat(row.querySelector('.ca2').value)||0, ex = parseFloat(row.querySelector('.exam').value)||0;
+        const tot = c1 + c2 + ex;
         row.querySelector('.total-display').innerText = tot;
-        const b = row.querySelector('.badge'); b.innerText = tot >= 70 ? 'A' : tot >= 60 ? 'B' : tot >= 50 ? 'C' : 'F';
-        b.className = 'badge ' + (tot >= 50 ? 'bg-mid' : 'bg-f');
+        const b = row.querySelector('.badge');
+        b.innerText = tot >= 70 ? 'A' : tot >= 60 ? 'B' : tot >= 50 ? 'C' : tot >= 40 ? 'D' : 'F';
+        b.className = 'badge ' + (tot >= 40 ? 'bg-mid' : 'bg-f');
     };
 
     window.saveScores = async () => {
         const sub = document.getElementById('tSubject').value, cls = document.getElementById('tClass').value, term = document.getElementById('tTerm').value;
+        if(!cls) return alert("Select Class");
         const batch = writeBatch(db);
         document.querySelectorAll('#studentRows tr').forEach(row => {
-            const sid = row.querySelector('.ca').dataset.id;
+            const sid = row.querySelector('.ca1').dataset.id;
             const rid = `${term}_${sid}_${sub}`.replace(/\s/g,'');
-            batch.set(doc(db, "records", rid), { studentId: sid, term, class: cls, subject: sub, ca: parseFloat(row.querySelector('.ca').value)||0, exam: parseFloat(row.querySelector('.exam').value)||0, total: parseFloat(row.querySelector('.total-display').innerText), grade: row.querySelector('.badge').innerText });
+            batch.set(doc(db, "records", rid), { 
+                studentId: sid, term, class: cls, subject: sub, 
+                ca1: parseFloat(row.querySelector('.ca1').value)||0, 
+                ca2: parseFloat(row.querySelector('.ca2').value)||0, 
+                exam: parseFloat(row.querySelector('.exam').value)||0, 
+                total: parseFloat(row.querySelector('.total-display').innerText), 
+                grade: row.querySelector('.badge').innerText 
+            });
         });
         await batch.commit(); alert("Synced!");
     };
 
+    // REPORT LOGIC
     window.getClassPositions = (cls, term) => {
         const sums = students.filter(s => s.class === cls).map(s => {
             return { id: s.id, total: records.filter(r => r.studentId === s.id && r.term === term).reduce((a,b)=>a+b.total,0) };
@@ -259,7 +331,19 @@
 
     window.getSingleReportHTML = (id, term) => {
         const s = students.find(st => st.id === id), rcs = records.filter(r => r.studentId === id && r.term === term), pos = window.getClassPositions(s.class, term);
-        return `<div class="single-report"><div style="text-align:center;border-bottom:3px solid #1e3c72;padding-bottom:15px;margin-bottom:20px"><h2>MAGAJI SA'IDU PRIMARY SCHOOL DAURA</h2><p>OFFICIAL STUDENT REPORT - ${term.toUpperCase()}</p></div><div style="display:flex;justify-content:space-between;margin-bottom:20px"><div><b>NAME:</b> ${s.name}<br><b>CLASS:</b> ${s.class}</div><div style="text-align:right"><b>POSITION:</b> ${pos[id]}<br><b>TOTAL:</b> ${rcs.reduce((a,b)=>a+b.total,0)}</div></div><table><thead><tr><th style="text-align:left">SUBJECT</th><th>CA</th><th>EXAM</th><th>TOTAL</th><th>GRADE</th></tr></thead><tbody>${rcs.map(r => `<tr><td style="text-align:left">${r.subject}</td><td>${r.ca}</td><td>${r.exam}</td><td>${r.total}</td><td>${r.grade}</td></tr>`).join('')}</tbody></table><div style="margin-top:50px;display:flex;justify-content:space-between"><p><b>Class Teacher:</b> _________________</p><p><b>Headmaster:</b> _________________</p></div></div>`;
+        return `<div class="single-report">
+            <div style="text-align:center;border-bottom:3px solid #1e3c72;padding-bottom:15px;margin-bottom:20px">
+                <h2>MAGAJI SA'IDU PRIMARY SCHOOL DAURA</h2><p>OFFICIAL STUDENT REPORT - ${term.toUpperCase()}</p>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:20px">
+                <div><b>NAME:</b> ${s.name}<br><b>CLASS:</b> ${s.class}</div>
+                <div style="text-align:right"><b>POSITION:</b> ${pos[id] || '-'}<br><b>TOTAL:</b> ${rcs.reduce((a,b)=>a+b.total,0)}</div>
+            </div>
+            <table><thead><tr><th style="text-align:left">SUBJECT</th><th>1st CA</th><th>2nd CA</th><th>EXAM</th><th>TOTAL</th><th>GRADE</th></tr></thead><tbody>
+            ${rcs.map(r => `<tr><td style="text-align:left">${r.subject}</td><td>${r.ca1||0}</td><td>${r.ca2||0}</td><td>${r.exam}</td><td>${r.total}</td><td>${r.grade}</td></tr>`).join('')}
+            </tbody></table>
+            <div style="margin-top:50px;display:flex;justify-content:space-between"><p><b>Class Teacher:</b> _________________</p><p><b>Headmaster:</b> _________________</p></div>
+        </div>`;
     };
 
     window.viewReportCard = (id, term) => { document.getElementById('cardContent').innerHTML = window.getSingleReportHTML(id, term); document.getElementById('broadSheetView').style.display='none'; document.getElementById('reportCardView').style.display='block'; };
