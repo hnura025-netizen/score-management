@@ -247,10 +247,10 @@
     window.registerStudent = async () => {
         const name = document.getElementById('regName').value.trim(), 
               cls = document.getElementById('regClass').value,
-              session = document.getElementById('regSession').value; // Added session
+              session = document.getElementById('regSession').value;
         if(!name) return;
         const id = "STU" + Date.now();
-        await setDoc(doc(db, "students", id), { id, name, class: cls, session: session }); // Added session to firestore
+        await setDoc(doc(db, "students", id), { id, name, class: cls, session: session });
         document.getElementById('regName').value = "";
     };
 
@@ -311,15 +311,32 @@
                 grade: row.querySelector('.badge').innerText 
             });
         });
-        await batch.commit(); alert("Synced!");
+        await batch.commit(); 
+        alert("Synced!");
+        location.reload(); 
     };
 
-    // REPORT LOGIC
+    // UPDATED POSITION LOGIC FOR TIES
     window.getClassPositions = (cls, term) => {
         const sums = students.filter(s => s.class === cls).map(s => {
             return { id: s.id, total: records.filter(r => r.studentId === s.id && r.term === term).reduce((a,b)=>a+b.total,0) };
         }).sort((a,b)=>b.total - a.total);
-        return sums.reduce((acc, cur, i) => { acc[cur.id] = i + 1; return acc; }, {});
+        
+        let positions = {};
+        let currentRank = 1;
+        
+        sums.forEach((student, index) => {
+            // If current total matches the total of the previous student in the sorted list
+            if (index > 0 && student.total === sums[index - 1].total) {
+                // They keep the same rank as the person above
+                positions[student.id] = currentRank;
+            } else {
+                // Otherwise, rank becomes the current human-readable index (1-based)
+                currentRank = index + 1;
+                positions[student.id] = currentRank;
+            }
+        });
+        return positions;
     };
 
     window.generateReport = () => {
@@ -341,7 +358,7 @@
         const s = students.find(st => st.id === id), 
               rcs = records.filter(r => r.studentId === id && r.term === term), 
               pos = window.getClassPositions(s.class, term);
-        const sessionDisplay = s.session || "2025/2026"; // Fallback if old record
+        const sessionDisplay = s.session || "2025/2026";
         
         return `<div class="single-report">
             <div style="text-align:center;border-bottom:3px solid #1e3c72;padding-bottom:15px;margin-bottom:20px">
