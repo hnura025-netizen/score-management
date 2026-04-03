@@ -1,0 +1,23 @@
+{
+  "name": "Magaji Sa'idu Primary School Portal",
+  "short_name": "MSPS Portal",
+  "description": "Official Student Records & Result Management System for MSPS Daura",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#1e3c72",
+  "theme_color": "#1e3c72",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
