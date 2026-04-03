@@ -62,7 +62,7 @@
         
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th { background: var(--primary); color: white; padding: 12px; font-size: 12px; text-transform: uppercase; }
-        td { padding: 12px 8px; border-bottom: 1px solid #edf2f7; text-align: center; }
+        td { padding: 12px 8px; border-bottom: 1px solid #edf2f7; text-align: center; position: relative; }
 
         .btn { padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.2s; }
         .btn-primary { background: var(--primary); color: white; }
@@ -74,7 +74,9 @@
         .badge { padding: 4px 8px; border-radius: 4px; font-weight: 800; color: white; font-size: 12px; display: inline-block; }
         .bg-mid { background: #2563eb; } .bg-f { background: #dc2626; }
 
-        .score-input { width: 70px; text-align: center; padding: 8px; }
+        .score-input { width: 70px; text-align: center; padding: 8px; border: 2px solid #ddd; border-radius: 5px; }
+        .limit-error { border-color: var(--danger) !important; background-color: #fee2e2 !important; }
+        .error-hint { color: var(--danger); font-size: 10px; display: none; font-weight: bold; position: absolute; width: 100%; left: 0; bottom: -2px; }
 
         #authOverlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -220,7 +222,6 @@
     onSnapshot(collection(db, "students"), snap => { students = snap.docs.map(d => d.data()); window.renderRegistry(); });
     onSnapshot(collection(db, "records"), snap => records = snap.docs.map(d => d.data()));
 
-    // AUTH LOGIC
     window.openRegistry = () => { if(currentUser) window.showTab('settings'); else document.getElementById('authOverlay').style.display = 'flex'; };
     window.handleLogin = async () => {
         const e = document.getElementById('adminEmail').value, p = document.getElementById('adminPass').value;
@@ -235,7 +236,6 @@
     };
     window.logoutAdmin = () => signOut(auth).then(() => window.showTab('teacher'));
 
-    // TAB LOGIC
     window.showTab = (id) => {
         document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -243,7 +243,6 @@
         document.getElementById('btn-' + id).classList.add('active');
     };
 
-    // STUDENT LOGIC
     window.registerStudent = async () => {
         const name = document.getElementById('regName').value.trim(), 
               cls = document.getElementById('regClass').value,
@@ -274,30 +273,48 @@
         await batch.commit(); alert("Promoted!");
     };
 
-    // SCORE LOGIC
     window.loadStudentList = () => {
         const cls = document.getElementById('tClass').value;
-        document.getElementById('studentRows').innerHTML = students.filter(s => s.class === cls).sort((a,b)=>a.name.localeCompare(b.name))
-            .map((s, i) => `<tr><td>${i+1}</td><td style="text-align:left">${s.name}</td>
-                <td><input type="number" class="score-input ca1" data-id="${s.id}" oninput="window.calc(this)" min="0" max="20"></td>
-                <td><input type="number" class="score-input ca2" oninput="window.calc(this)" min="0" max="20"></td>
-                <td><input type="number" class="score-input exam" oninput="window.calc(this)" min="0" max="60"></td>
-                <td><strong class="total-display">0</strong></td><td><span class="badge bg-f">F</span></td></tr>`).join('');
+        const rows = students.filter(s => s.class === cls).sort((a,b)=>a.name.localeCompare(b.name));
+        document.getElementById('studentRows').innerHTML = rows.length > 0 ? rows.map((s, i) => `<tr>
+                <td>${i+1}</td>
+                <td style="text-align:left">${s.name}</td>
+                <td>
+                    <input type="number" class="score-input ca1" data-id="${s.id}" oninput="window.calc(this)" max="20" placeholder="0">
+                    <span class="error-hint">Max 20</span>
+                </td>
+                <td>
+                    <input type="number" class="score-input ca2" oninput="window.calc(this)" max="20" placeholder="0">
+                    <span class="error-hint">Max 20</span>
+                </td>
+                <td>
+                    <input type="number" class="score-input exam" oninput="window.calc(this)" max="60" placeholder="0">
+                    <span class="error-hint">Max 60</span>
+                </td>
+                <td><strong class="total-display">0</strong></td>
+                <td><span class="badge bg-f">F</span></td>
+            </tr>`).join('') : `<tr><td colspan="7">No students found in this class. Add them in Registry.</td></tr>`;
     };
 
     window.calc = (el) => {
-        // Enforce max limits via JS
-        if(el.classList.contains('ca1') || el.classList.contains('ca2')) {
-            if(parseFloat(el.value) > 20) el.value = 20;
+        const val = parseFloat(el.value) || 0;
+        const max = parseFloat(el.getAttribute('max'));
+        const hint = el.nextElementSibling;
+
+        if (val > max) {
+            el.classList.add('limit-error');
+            if (hint) hint.style.display = 'block';
+        } else {
+            el.classList.remove('limit-error');
+            if (hint) hint.style.display = 'none';
         }
-        if(el.classList.contains('exam')) {
-            if(parseFloat(el.value) > 60) el.value = 60;
-        }
-        if(parseFloat(el.value) < 0) el.value = 0;
 
         const row = el.closest('tr');
-        const c1 = parseFloat(row.querySelector('.ca1').value)||0, c2 = parseFloat(row.querySelector('.ca2').value)||0, ex = parseFloat(row.querySelector('.exam').value)||0;
+        const c1 = parseFloat(row.querySelector('.ca1').value) || 0;
+        const c2 = parseFloat(row.querySelector('.ca2').value) || 0;
+        const ex = parseFloat(row.querySelector('.exam').value) || 0;
         const tot = c1 + c2 + ex;
+        
         row.querySelector('.total-display').innerText = tot;
         const b = row.querySelector('.badge');
         b.innerText = tot >= 70 ? 'A' : tot >= 60 ? 'B' : tot >= 50 ? 'C' : tot >= 40 ? 'D' : 'F';
@@ -306,9 +323,16 @@
 
     window.saveScores = async () => {
         const sub = document.getElementById('tSubject').value, cls = document.getElementById('tClass').value, term = document.getElementById('tTerm').value;
-        if(!cls) return alert("Select Class");
+        if(!cls) return alert("Select Class First");
+
+        const errors = document.querySelectorAll('.limit-error');
+        if(errors.length > 0) return alert("One or more scores exceed the limit! (CA max 20, Exam max 60). Please correct red boxes.");
+
         const batch = writeBatch(db);
-        document.querySelectorAll('#studentRows tr').forEach(row => {
+        const rows = document.querySelectorAll('#studentRows tr');
+        if (rows.length === 0 || rows[0].innerText.includes("No students")) return alert("No data to save");
+
+        rows.forEach(row => {
             const sid = row.querySelector('.ca1').dataset.id;
             const rid = `${term}_${sid}_${sub}`.replace(/\s/g,'');
             batch.set(doc(db, "records", rid), { 
@@ -321,19 +345,15 @@
             });
         });
         await batch.commit(); 
-        alert("Synced!");
-        location.reload(); 
+        alert("Scores Saved Successfully!");
     };
 
-    // UPDATED POSITION LOGIC FOR TIES
     window.getClassPositions = (cls, term) => {
         const sums = students.filter(s => s.class === cls).map(s => {
             return { id: s.id, total: records.filter(r => r.studentId === s.id && r.term === term).reduce((a,b)=>a+b.total,0) };
         }).sort((a,b)=>b.total - a.total);
         
-        let positions = {};
-        let currentRank = 1;
-        
+        let positions = {}, currentRank = 1;
         sums.forEach((student, index) => {
             if (index > 0 && student.total === sums[index - 1].total) {
                 positions[student.id] = currentRank;
@@ -364,13 +384,11 @@
         const s = students.find(st => st.id === id), 
               rcs = records.filter(r => r.studentId === id && r.term === term), 
               pos = window.getClassPositions(s.class, term);
-        const sessionDisplay = s.session || "2025/2026";
-        
         return `<div class="single-report">
             <div style="text-align:center;border-bottom:3px solid #1e3c72;padding-bottom:15px;margin-bottom:20px">
                 <h2>MAGAJI SA'IDU PRIMARY SCHOOL DAURA</h2>
                 <p>OFFICIAL STUDENT REPORT - ${term.toUpperCase()}</p>
-                <p><b>SESSION:</b> ${sessionDisplay}</p>
+                <p><b>SESSION:</b> ${s.session || "2025/2026"}</p>
             </div>
             <div style="display:flex;justify-content:space-between;margin-bottom:20px">
                 <div><b>NAME:</b> ${s.name}<br><b>CLASS:</b> ${s.class}</div>
