@@ -279,13 +279,22 @@
         const cls = document.getElementById('tClass').value;
         document.getElementById('studentRows').innerHTML = students.filter(s => s.class === cls).sort((a,b)=>a.name.localeCompare(b.name))
             .map((s, i) => `<tr><td>${i+1}</td><td style="text-align:left">${s.name}</td>
-                <td><input type="number" class="score-input ca1" data-id="${s.id}" oninput="window.calc(this)" max="20"></td>
-                <td><input type="number" class="score-input ca2" oninput="window.calc(this)" max="20"></td>
-                <td><input type="number" class="score-input exam" oninput="window.calc(this)" max="60"></td>
+                <td><input type="number" class="score-input ca1" data-id="${s.id}" oninput="window.calc(this)" min="0" max="20"></td>
+                <td><input type="number" class="score-input ca2" oninput="window.calc(this)" min="0" max="20"></td>
+                <td><input type="number" class="score-input exam" oninput="window.calc(this)" min="0" max="60"></td>
                 <td><strong class="total-display">0</strong></td><td><span class="badge bg-f">F</span></td></tr>`).join('');
     };
 
     window.calc = (el) => {
+        // Enforce max limits via JS
+        if(el.classList.contains('ca1') || el.classList.contains('ca2')) {
+            if(parseFloat(el.value) > 20) el.value = 20;
+        }
+        if(el.classList.contains('exam')) {
+            if(parseFloat(el.value) > 60) el.value = 60;
+        }
+        if(parseFloat(el.value) < 0) el.value = 0;
+
         const row = el.closest('tr');
         const c1 = parseFloat(row.querySelector('.ca1').value)||0, c2 = parseFloat(row.querySelector('.ca2').value)||0, ex = parseFloat(row.querySelector('.exam').value)||0;
         const tot = c1 + c2 + ex;
@@ -326,12 +335,9 @@
         let currentRank = 1;
         
         sums.forEach((student, index) => {
-            // If current total matches the total of the previous student in the sorted list
             if (index > 0 && student.total === sums[index - 1].total) {
-                // They keep the same rank as the person above
                 positions[student.id] = currentRank;
             } else {
-                // Otherwise, rank becomes the current human-readable index (1-based)
                 currentRank = index + 1;
                 positions[student.id] = currentRank;
             }
